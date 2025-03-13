@@ -64,14 +64,15 @@ The Simple Price Oracle AVS Example demonstrates how to deploy a minimal AVS usi
 
 ## Architecture
 
-![Price oracle sample](https://github.com/user-attachments/assets/03d544eb-d9c3-44a7-9712-531220c94f7e)
+![Price oracle sample](https://github.com/user-attachments/assets/8c60b9c4-e1b1-468b-a8cb-e0a59a604d21)
 
 The Performer node executes tasks using the Task Execution Service and sends the results to the p2p network.
 
 Attester Nodes validate task execution through the Validation Service. Based on the Validation Service's response, attesters sign the tasks. In this AVS:
 
 Task Execution logic:
-- Fetch the ETHUSDT price.
+- Fetch the ETHUSDT price.![2025-03-13 11 52 28]()
+
 - Store the result in IPFS.
 - Share the IPFS CID as proof.
 
