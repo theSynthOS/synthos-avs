@@ -2,7 +2,7 @@
 const { Router } = require("express");
 const CustomError = require("./utils/validateError");
 const CustomResponse = require("./utils/validateResponse");
-const oracleService = require("./oracle.service");
+const policyService = require("./policy.service");
 const dalService = require("./dal.service");
 
 const router = Router();
@@ -11,7 +11,8 @@ router.post("/execute", async (req, res) => {
   console.log("Validating execution request");
 
   try {
-    const { safeTxHash, agentId } = req.body;
+    const { safeTxHash, agentId, taskDefinitionId = 0 } = req.body;
+    console.log(`taskDefinitionId: ${taskDefinitionId}`);
 
     if (!safeTxHash || !agentId) {
       return res
@@ -25,7 +26,7 @@ router.post("/execute", async (req, res) => {
     }
 
     // Validate transaction against policy registry
-    const validationResult = await dalService.validateTransaction(
+    const validationResult = await policyService.validateTransaction(
       safeTxHash,
       agentId
     );
@@ -42,11 +43,16 @@ router.post("/execute", async (req, res) => {
     // Publish result to IPFS
     const resultCid = await dalService.publishJSONToIpfs(executionResult);
 
+    // Send the task with the IPFS CID
+    const data = JSON.stringify(executionResult);
+    await dalService.sendTask(resultCid, data, taskDefinitionId);
+
     return res.status(200).send(
       new CustomResponse(
         {
-          executionResult,
-          proofCid: resultCid,
+          proofOfTask: resultCid,
+          data: data,
+          taskDefinitionId: taskDefinitionId,
         },
         "Execution validation completed"
       )

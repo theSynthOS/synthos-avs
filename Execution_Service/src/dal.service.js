@@ -2,50 +2,16 @@ require("dotenv").config();
 const pinataSDK = require("@pinata/sdk");
 const { ethers } = require("ethers");
 
-// ABI for Policy Registry contract interface
-const POLICY_REGISTRY_ABI = [
-  "function validateTransaction(bytes32 safeTxHash, uint256 agentId) view returns (bool isValid, string memory reason)",
-  "function getAgentPolicies(uint256 agentId) view returns (uint256[] memory policyIds)",
-];
-
-var pinataApiKey = "";
-var pinataSecretApiKey = "";
-var rpcBaseAddress = "";
-var privateKey = "";
-var policyRegistryAddress = "";
+let pinataApiKey = "";
+let pinataSecretApiKey = "";
+let rpcBaseAddress = "";
+let privateKey = "";
 
 function init() {
   pinataApiKey = process.env.PINATA_API_KEY;
   pinataSecretApiKey = process.env.PINATA_SECRET_API_KEY;
   rpcBaseAddress = process.env.OTHENTIC_CLIENT_RPC_ADDRESS;
   privateKey = process.env.PRIVATE_KEY_PERFORMER;
-  policyRegistryAddress = process.env.POLICY_REGISTRY_ADDRESS;
-}
-
-async function validateTransaction(safeTxHash, agentId) {
-  try {
-    const provider = new ethers.JsonRpcProvider(rpcBaseAddress);
-    const policyRegistry = new ethers.Contract(
-      policyRegistryAddress,
-      POLICY_REGISTRY_ABI,
-      provider
-    );
-
-    // Call the policy registry to validate the transaction
-    const [isValid, reason] = await policyRegistry.validateTransaction(
-      safeTxHash,
-      agentId
-    );
-
-    return {
-      isValid,
-      reason,
-      timestamp: Date.now(),
-    };
-  } catch (error) {
-    console.error("Error validating transaction:", error);
-    throw new Error(`Policy validation failed: ${error.message}`);
-  }
 }
 
 async function sendTask(proofOfTask, data, taskDefinitionId) {
@@ -95,5 +61,4 @@ module.exports = {
   init,
   publishJSONToIpfs,
   sendTask,
-  validateTransaction,
 };

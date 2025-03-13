@@ -1,16 +1,12 @@
 require("dotenv").config();
 const { ethers } = require("ethers");
 const dalService = require("./dal.service");
+const policyService = require("./policy.service");
 
 // ABI for Policy Registry and Attestation contracts
 const POLICY_REGISTRY_ABI = [
   "function validateTransaction(bytes32 safeTxHash, uint256 agentId) view returns (bool isValid, string memory reason)",
   "function getAgentPolicies(uint256 agentId) view returns (uint256[] memory policyIds)",
-];
-
-const ATTESTATION_CENTER_ABI = [
-  "function generateAttestation(bytes32 executionHash, bytes32 validationHash, address agent) returns (bytes32 attestationId)",
-  "function verifyAttestation(bytes32 attestationId) view returns (bool isValid)",
 ];
 
 let policyRegistry;
@@ -36,118 +32,49 @@ function init() {
   );
 }
 
-async function validateExecution(proofCid, safeTxHash, agentId) {
+async function validate(proofOfTask) {
   try {
-    // Fetch execution result from IPFS
-    const executionResult = await dalService.fetchFromIpfs(proofCid);
+    // 1. Fetch the execution result from IPFS
+    const executionResult = await dalService.fetchFromIpfs(proofOfTask);
 
-    // Verify parameters match
-    if (
-      executionResult.safeTxHash !== safeTxHash ||
-      executionResult.agentId !== agentId
-    ) {
-      throw new Error(
-        "Execution result parameters do not match provided values"
-      );
+    // 2. Extract the safeTxHash and agentId from the execution result
+    const { safeTxHash, agentId } = executionResult;
+
+    if (!safeTxHash || !agentId) {
+      return {
+        isValid: false,
+        reason: "Missing safeTxHash or agentId in execution result",
+      };
     }
 
-    // Re-run policy validation
-    const [isValid, reason] = await policyRegistry.validateTransaction(
+    // 3. Run our own validation against the policy registry
+    const validationResult = await policyService.validateTransaction(
       safeTxHash,
       agentId
     );
 
-    const validationResult = {
-      isValid,
-      reason,
-      timestamp: Date.now(),
-    };
-
-    // Compare results
-    const resultsMatch =
-      executionResult.status === (isValid ? "APPROVED" : "DENIED");
-    if (!resultsMatch) {
-      throw new Error("Validation results do not match execution results");
-    }
-
-    // Generate attestation
-    const attestation = await generateAttestation(
-      proofCid,
-      executionResult,
-      validationResult
-    );
+    // 4. Compare the execution result with our validation result
+    const expectedStatus = validationResult.isValid ? "APPROVED" : "DENIED";
+    const resultsMatch = executionResult.status === expectedStatus;
 
     return {
-      attestation,
-      validationResult,
+      isValid: resultsMatch,
+      reason: resultsMatch
+        ? "Execution result matches validator's policy check"
+        : "Execution result does not match validator's policy check",
+      executionStatus: executionResult.status,
+      validatorStatus: expectedStatus,
     };
   } catch (error) {
     console.error("Validation failed:", error);
-    throw error;
-  }
-}
-
-async function generateAttestation(
-  proofCid,
-  executionResult,
-  validationResult
-) {
-  try {
-    // Create hashes for attestation
-    const executionHash = ethers.keccak256(
-      ethers.AbiCoder.defaultAbiCoder().encode(
-        ["string", "bytes32", "uint256", "uint256", "string"],
-        [
-          proofCid,
-          executionResult.safeTxHash,
-          executionResult.agentId,
-          executionResult.timestamp,
-          executionResult.status,
-        ]
-      )
-    );
-
-    const validationHash = ethers.keccak256(
-      ethers.AbiCoder.defaultAbiCoder().encode(
-        ["bool", "string", "uint256"],
-        [
-          validationResult.isValid,
-          validationResult.reason,
-          validationResult.timestamp,
-        ]
-      )
-    );
-
-    // Generate attestation on-chain
-    const attestationId = await attestationCenter.generateAttestation(
-      executionHash,
-      validationHash,
-      wallet.address
-    );
-
-    // Verify the attestation
-    const isValid = await attestationCenter.verifyAttestation(attestationId);
-    if (!isValid) {
-      throw new Error("Generated attestation verification failed");
-    }
-
     return {
-      attestationId,
-      executionHash,
-      validationHash,
-      validator: wallet.address,
-      timestamp: Date.now(),
-      proofCid,
-      executionResult,
-      validationResult,
+      isValid: false,
+      reason: `Validation error: ${error.message}`,
     };
-  } catch (error) {
-    console.error("Attestation generation failed:", error);
-    throw error;
   }
 }
 
 module.exports = {
   init,
-  validateExecution,
+  validate,
 };

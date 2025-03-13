@@ -3,49 +3,29 @@ const { Router } = require("express");
 const CustomError = require("./utils/validateError");
 const CustomResponse = require("./utils/validateResponse");
 const validatorService = require("./validator.service");
-const dalService = require("./dal.service");
 
 const router = Router();
 
 router.post("/validate", async (req, res) => {
-  console.log("Validating execution result");
+  var proofOfTask = req.body.proofOfTask;
+  console.log(`Validate task: proof of task: ${proofOfTask}`);
+
+  if (!proofOfTask) {
+    return res
+      .status(400)
+      .send(new CustomError("Missing required parameter: proofOfTask", {}));
+  }
 
   try {
-    const { proofCid, safeTxHash, agentId } = req.body;
-
-    if (!proofCid || !safeTxHash || !agentId) {
-      return res
-        .status(400)
-        .send(
-          new CustomError(
-            "Missing required parameters: proofCid, safeTxHash, and agentId",
-            {}
-          )
-        );
-    }
-
-    // Validate execution and generate attestation
-    const { attestation, validationResult } =
-      await validatorService.validateExecution(proofCid, safeTxHash, agentId);
-
-    // Store attestation on IPFS
-    const attestationCid = await dalService.publishJSONToIpfs(attestation);
-
-    return res.status(200).send(
-      new CustomResponse(
-        {
-          attestation,
-          attestationCid,
-          validationResult,
-        },
-        "Validation completed and attestation generated"
-      )
+    const result = await validatorService.validate(proofOfTask);
+    console.log(
+      "Validation result:",
+      result.isValid ? "Approved" : "Not Approved"
     );
+    return res.status(200).send(new CustomResponse(result));
   } catch (error) {
     console.log(error);
-    return res
-      .status(500)
-      .send(new CustomError("Validation failed", { error: error.message }));
+    return res.status(500).send(new CustomError("Something went wrong", {}));
   }
 });
 
