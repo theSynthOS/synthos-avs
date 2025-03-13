@@ -2,7 +2,7 @@ require("dotenv").config();
 const { ethers, JsonRpcProvider } = require("ethers");
 const axios = require("axios");
 
-// ABI for Policy Registry contract interface
+// ABI for Policy Coordinator contract interface
 const POLICY_COORDINATOR_ABI = [
   "function validateTransaction(string calldata dockerfileHash, address targetAddress, bytes4 functionSignature, uint256 executionTime) external view returns (bool isValid, string memory reason)",
 ];
@@ -64,7 +64,7 @@ async function getSafeTransactionDetails(safeTxHash) {
   }
 }
 
-async function validateTransaction(safeTxHash, agentHash) {
+async function validateTransaction(safeTxHash, agentId) {
   try {
     // 1. Get transaction details from Safe
     const txDetails = await getSafeTransactionDetails(safeTxHash);
@@ -77,7 +77,17 @@ async function validateTransaction(safeTxHash, agentHash) {
       provider
     );
 
-    // 3. Call the policy coordinator with all the required details
+    // 3. Connect to agent registry
+    const agentRegistry = new ethers.Contract(
+      agentRegistryAddress,
+      AGENT_REGISTRY_ABI,
+      provider
+    );
+
+    // 4. Get the agent hash from the agent registry
+    const agentHash = await agentRegistry.getAgentHashById(agentId);
+
+    // 5. Call the policy coordinator with all the required details
     const [isValid, reason] = await policyCoordinator.validateTransaction(
       agentHash,
       txDetails.to, // Target address (Resources)
