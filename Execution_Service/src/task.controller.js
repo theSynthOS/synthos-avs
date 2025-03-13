@@ -12,9 +12,8 @@ router.post("/execute", async (req, res) => {
 
   try {
     const { safeTxHash, agentId, taskDefinitionId = 0 } = req.body;
-    console.log(`taskDefinitionId: ${taskDefinitionId}`);
 
-    if (!safeTxHash || !agentId) {
+    if (!safeTxHash || agentId == undefined) {
       return res
         .status(400)
         .send(
