@@ -1,6 +1,6 @@
 # Policy-based Transaction Validation AVS
 
-## This repository implements a policy-based transaction validation AVS built on the Othentic Stack.
+### This repository implements a policy-based transaction validation AVS built on the Othentic Stack.
 
 ## Table of Contents
 
