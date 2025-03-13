@@ -20,6 +20,9 @@
     "express": "^4.18.1",
     "express-session": "^1.17.3",
     "fs": "^0.0.1-security",
-    "nodemon": "^3.1.0"
+    "nodemon": "^3.1.0",
+    "@safe-global/safe-core-sdk": "^2.0.0",
+    "@safe-global/safe-ethers-lib": "^2.0.0",
+    "@safe-global/safe-service-client": "^2.0.0"
   }
 }
