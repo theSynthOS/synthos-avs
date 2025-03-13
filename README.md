@@ -1,8 +1,6 @@
-# Simple Price Oracle AVS Example
+# Policy-based Transaction Validation AVS
 
-This repository demonstrates how to implement a simple price oracle AVS using the Othentic Stack.
-
----
+## This repository implements a policy-based transaction validation AVS built on the Othentic Stack.
 
 ## Table of Contents
 
@@ -17,99 +15,82 @@ This repository demonstrates how to implement a simple price oracle AVS using th
 
 ## Overview
 
-The Simple Price Oracle AVS Example demonstrates how to deploy a minimal AVS using Othentic Stack.
-
-
+The Policy-based Transaction Validation AVS is a decentralized framework that enables the validation of blockchain transactions against predefined policies. It leverages the Othentic Stack to provide a secure and transparent validation mechanism.
 
 ### Features
 
-- **Containerised deployment:** Simplifies deployment and scaling.
-- **Prometheus and Grafana integration:** Enables real-time monitoring and observability.
+- **Safe Transaction Validation:** Validates transactions against customizable policies
+- **Policy Registry Integration:** Connects with on-chain policy registry
+- **IPFS Proof Storage:** Stores validation results on IPFS
+- **Containerised deployment:** Simplifies deployment and scaling
+- **Prometheus and Grafana integration:** Enables real-time monitoring and observability
 
 ## Project Structure
 
 ```mdx
-📂 simple-price-oracle-avs-example
-├── 📂 Execution_Service         # Implements Task execution logic - Express JS Backend
-│   ├── 📂 config/
-│   │   └── app.config.js        # An Express.js app setup with dotenv, and a task controller route for handling `/task` endpoints.
-│   ├── 📂 src/
-│   │   └── dal.service.js       # A module that interacts with Pinata for IPFS uploads
-│   │   ├── oracle.service.js    # A utility module to fetch the current price of a cryptocurrency pair from the Binance API
-│   │   ├── task.controller.js   # An Express.js router handling a `/execute` POST endpoint
-│   │   ├── 📂 utils             # Defines two custom classes, CustomResponse and CustomError, for standardizing API responses
-│   ├── Dockerfile               # A Dockerfile that sets up a Node.js (22.6) environment, exposes port 8080, and runs the application via index.js
-|   ├── index.js                 # A Node.js server entry point that initializes the DAL service, loads the app configuration, and starts the server on the specified port
-│   └── package.json             # Node.js dependencies and scripts
+📂 policy-based-transaction-validation-avs
+├── 📂 Execution_Service # Implements transaction validation execution - Express JS Backend
+│ ├── 📂 config/
+│ │ └── app.config.js # Express.js app setup with task controller route
+│ ├── 📂 src/
+│ │ └── dal.service.js # IPFS data storage and task sending service
+│ │ ├── policy.service.js # Safe transaction fetching and policy validation service
+│ │ ├── task.controller.js # Express.js router handling `/execute` endpoint for transaction validation
+│ │ ├── 📂 utils # Custom response and error handling utilities
+│ ├── Dockerfile # Docker configuration for the Execution Service
+│ ├── index.js # Node.js server entry point
+│ └── package.json # Node.js dependencies and scripts
 │
-├── 📂 Validation_Service         # Implements task validation logic - Express JS Backend
-│   ├── 📂 config/
-│   │   └── app.config.js         # An Express.js app setup with a task controller route for handling `/task` endpoints.
-│   ├── 📂 src/
-│   │   └── dal.service.js        # A module that interacts with Pinata for IPFS uploads
-│   │   ├── oracle.service.js     # A utility module to fetch the current price of a cryptocurrency pair from the Binance API
-│   │   ├── task.controller.js    # An Express.js router handling a `/validate` POST endpoint
-│   │   ├── validator.service.js  # A validation module that checks if a task result from IPFS matches the ETH/USDT price within a 5% margin.
-│   │   ├── 📂 utils              # Defines two custom classes, CustomResponse and CustomError, for standardizing API responses.
-│   ├── Dockerfile                # A Dockerfile that sets up a Node.js (22.6) environment, exposes port 8080, and runs the application via index.js.
-|   ├── index.js                  # A Node.js server entry point that initializes the DAL service, loads the app configuration, and starts the server on the specified port.
-│   └── package.json              # Node.js dependencies and scripts
+├── 📂 Validation_Service # Implements transaction validation verification - Express JS Backend
+│ ├── 📂 config/
+│ │ └── app.config.js # Express.js app setup for validation endpoints
+│ ├── 📂 src/
+│ │ └── dal.service.js # IPFS data retrieval service
+│ │ ├── policy.service.js # Policy contract interaction for independent validation
+│ │ ├── task.controller.js # Express.js router handling `/validate` endpoint
+│ │ ├── validator.service.js # Service that verifies execution results against policy
+│ │ ├── 📂 utils # Custom response and error handling utilities
+│ ├── Dockerfile # Docker configuration for the Validation Service
+│ ├── index.js # Node.js server entry point
+│ └── package.json # Node.js dependencies and scripts
 │
-├── 📂 grafana                    # Grafana monitoring configuration
-├── docker-compose.yml            # Docker setup for Operator Nodes (Performer, Attesters, Aggregator), Execution Service, Validation Service, and monitoring tools
-├── .env.example                  # An example .env file containing configuration details and contract addresses
-├── README.md                     # Project documentation
-└── prometheus.yaml               # Prometheus configuration for logs
+├── 📂 grafana # Grafana monitoring configuration
+├── docker-compose.yml # Docker setup for all services and monitoring
+├── .env.example # Environment configuration example with required variables
+├── README.md # Project documentation
+└── prometheus.yaml # Prometheus configuration for monitoring
 ```
 
 ## Architecture
 
-![Price oracle sample](https://github.com/user-attachments/assets/8c60b9c4-e1b1-468b-a8cb-e0a59a604d21)
+1. **Policy Creation**: Policy creators define conditions (When, How) for transactions and register them with the Policy Registry contract
 
-The Performer node executes tasks using the Task Execution Service and sends the results to the p2p network.
+2. **Execution Service**:
 
-Attester Nodes validate task execution through the Validation Service. Based on the Validation Service's response, attesters sign the tasks. In this AVS:
+   - Receives a Safe transaction hash (safeTxHash) and agent ID
 
-Task Execution logic:
-- Fetch the ETHUSDT price.![2025-03-13 11 52 28]()
+   - Uses Safe SDK to fetch transaction details
 
-- Store the result in IPFS.
-- Share the IPFS CID as proof.
+   - Validates the transaction against policies in the Policy Registry
 
-Validation Service logic:
-- Retrieve the price from IPFS using the CID.
-- Get the expected ETHUSDT price.
-- Validate by comparing the actual and expected prices within an acceptable margin.
+   - Publishes results to IPFS and returns the CID as proof
+
+3. **Validation Service**:
+
+   - Receives the IPFS CID as proof of task
+
+   - Retrieves the execution result from IPFS
+
+   - Independently validates the same transaction against the Policy Registry
+
+   - Confirms that the execution result matches the validator's own check
+
+4. **Attestation Process**:
+
+   - Attester nodes use the validation result to determine whether to attest to the transaction
+
+   - Valid transactions receive attestations, which can be used by the Safe Multisig
+
+![Diagram](https://github.com/user-attachments/assets/8c60b9c4-e1b1-468b-a8cb-e0a59a604d21)
+
 ---
-
-## Prerequisites
-
-- Node.js (v 22.6.0 )
-- Foundry
-- [Yarn](https://yarnpkg.com/)
-- [Docker](https://docs.docker.com/engine/install/)
-
-## Installation
-
-1. Clone the repository:
-
-   ```bash
-   git clone https://github.com/Othentic-Labs/simple-price-oracle-avs-example.git
-   cd simple-price-oracle-avs-example
-   ```
-
-2. Install Othentic CLI:
-
-   ```bash
-   npm i -g @othentic/othentic-cli
-   ```
-
-## Usage
-
-Follow the steps in the official documentation's [Quickstart](https://docs.othentic.xyz/main/avs-framework/quick-start#steps) Guide for setup and deployment.
-
-### Next
-Modify the different configurations, tailor the task execution logic as per your use case, and run the AVS.
-
-Happy Building! 🚀
-
