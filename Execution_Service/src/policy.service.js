@@ -1,22 +1,26 @@
 require("dotenv").config();
-const { ethers } = require("ethers");
-const Safe = require("@safe-global/safe-core-sdk").default;
-const EthersAdapter = require("@safe-global/safe-ethers-lib").default;
-const SafeServiceClient = require("@safe-global/safe-service-client").default;
+const { ethers, JsonRpcProvider } = require("ethers");
+const axios = require("axios");
 
-// ABI for Policy Registry contract interface
-const POLICY_REGISTRY_ABI = [
-  "function validateTransaction(bytes32 safeTxHash, uint256 agentId, address targetAddress, bytes4 functionSignature, uint256 executionTime) view returns (bool isValid, string memory reason)",
-  "function getAgentPolicies(uint256 agentId) view returns (uint256[] memory policyIds)",
+// ABI for Policy Coordinator contract interface
+const POLICY_COORDINATOR_ABI = [
+  "function validateTransaction(string calldata dockerfileHash, address targetAddress, bytes4 functionSignature, uint256 executionTime) external view returns (bool isValid, string memory reason)",
 ];
 
-let policyRegistryChainRpcUrl = "";
-let policyRegistryAddress = "";
+// ABI for Agent Registry contract interface
+const AGENT_REGISTRY_ABI = [
+  "function getAgentHashById(uint256 agentId) view returns (string memory)",
+];
+
+let policyCoordinatorChainRpcUrl = "";
+let policyCoordinatorAddress = "";
+let agentRegistryAddress = "";
 let safeServiceUrl = "";
 
 function init() {
-  policyRegistryChainRpcUrl = process.env.POLICY_REGISTRY_CHAIN_RPC_URL;
-  policyRegistryAddress = process.env.POLICY_REGISTRY_ADDRESS;
+  policyCoordinatorChainRpcUrl = process.env.POLICY_COORDINATOR_CHAIN_RPC_URL;
+  policyCoordinatorAddress = process.env.POLICY_COORDINATOR_ADDRESS;
+  agentRegistryAddress = process.env.AGENT_REGISTRY_ADDRESS;
   safeServiceUrl =
     process.env.SAFE_SERVICE_URL ||
     "https://safe-transaction-goerli.safe.global";
@@ -24,26 +28,18 @@ function init() {
 
 async function getSafeTransactionDetails(safeTxHash) {
   try {
-    // Initialize provider and adapter
-    const provider = new ethers.JsonRpcProvider(policyRegistryChainRpcUrl);
-    const ethAdapter = new EthersAdapter({
-      ethers,
-      signerOrProvider: provider,
-    });
+    // Make direct API call to the Safe Transaction Service using the correct endpoint
+    const response = await axios.get(
+      `${safeServiceUrl}/api/v2/multisig-transactions/${safeTxHash}/`
+    );
+    const safeTransaction = response.data;
 
-    // Initialize Safe Service Client
-    const safeService = new SafeServiceClient({
-      txServiceUrl: safeServiceUrl,
-      ethAdapter,
-    });
-
-    // Get transaction details from the service
-    const safeTransaction = await safeService.getTransaction(safeTxHash);
+    console.log("Transaction data received:", safeTransaction);
 
     // Extract key details
     return {
       to: safeTransaction.to,
-      data: safeTransaction.data,
+      data: safeTransaction.data || "0x",
       value: safeTransaction.value,
       operation: safeTransaction.operation,
       safeTxGas: safeTransaction.safeTxGas,
@@ -55,12 +51,15 @@ async function getSafeTransactionDetails(safeTxHash) {
       executionTime: Date.now(), // Current time as execution time
       // Extract function signature (first 4 bytes of data)
       functionSignature:
-        safeTransaction.data.length >= 10
+        safeTransaction.data && safeTransaction.data.length >= 10
           ? safeTransaction.data.substring(0, 10)
           : "0x00000000",
     };
   } catch (error) {
     console.error("Error fetching Safe transaction details:", error);
+    if (error.response) {
+      console.error("API response error:", error.response.data);
+    }
     throw new Error(`Failed to fetch transaction details: ${error.message}`);
   }
 }
@@ -70,18 +69,27 @@ async function validateTransaction(safeTxHash, agentId) {
     // 1. Get transaction details from Safe
     const txDetails = await getSafeTransactionDetails(safeTxHash);
 
-    // 2. Connect to policy registry
-    const provider = new ethers.JsonRpcProvider(policyRegistryChainRpcUrl);
-    const policyRegistry = new ethers.Contract(
-      policyRegistryAddress,
-      POLICY_REGISTRY_ABI,
+    // 2. Connect to policy coordinator
+    const provider = new JsonRpcProvider(policyCoordinatorChainRpcUrl);
+    const policyCoordinator = new ethers.Contract(
+      policyCoordinatorAddress,
+      POLICY_COORDINATOR_ABI,
       provider
     );
 
-    // 3. Call the policy registry with all the required details
-    const [isValid, reason] = await policyRegistry.validateTransaction(
-      safeTxHash,
-      agentId,
+    // 3. Connect to agent registry
+    const agentRegistry = new ethers.Contract(
+      agentRegistryAddress,
+      AGENT_REGISTRY_ABI,
+      provider
+    );
+
+    // 4. Get the agent hash from the agent registry
+    const agentHash = await agentRegistry.getAgentHashById(agentId);
+
+    // 5. Call the policy coordinator with all the required details
+    const [isValid, reason] = await policyCoordinator.validateTransaction(
+      agentHash,
       txDetails.to, // Target address (Resources)
       txDetails.functionSignature, // Function signature (How)
       txDetails.executionTime // Execution time (When)
