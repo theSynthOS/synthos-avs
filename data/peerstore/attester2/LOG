@@ -1,4 +1,5 @@
-2025/03/12-22:06:46.956533 ecede280f060 Delete type=3 #1
-2025/03/12-23:21:58.792797 eceddbe0f060 Level-0 table #5: started
-2025/03/12-23:21:59.043546 eceddbe0f060 Level-0 table #5: 3658655 bytes OK
-2025/03/12-23:21:59.051439 eceddbe0f060 Delete type=0 #3
+2025/03/13-19:38:18.663446 edaf25e0f060 Recovering log #72
+2025/03/13-19:38:18.665938 edaf25e0f060 Level-0 table #74: started
+2025/03/13-19:38:18.672382 edaf25e0f060 Level-0 table #74: 51557 bytes OK
+2025/03/13-19:38:18.679149 edaf25e0f060 Delete type=3 #70
+2025/03/13-19:38:18.679652 edaf25e0f060 Delete type=0 #72

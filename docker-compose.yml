@@ -18,15 +18,15 @@ services:
       - "9876:9876"
     networks:
       p2p:
-        ipv4_address: 10.8.0.69
+        ipv4_address: 172.20.0.2
   attester-1:
     <<: *othentic-cli
     command: [
       "node",
       "attester",
-      "/ip4/10.8.0.69/tcp/9876/p2p/${OTHENTIC_BOOTSTRAP_ID}",
+      "/ip4/172.20.0.2/tcp/9876/p2p/${OTHENTIC_BOOTSTRAP_ID}",
       "--avs-webapi",
-      "http://10.8.0.42",
+      "http://172.20.0.6",
       "--l1-chain", "holesky",
       "--l2-chain", "${L2:-base-sepolia}",
       "--p2p.datadir", "data/peerstore/attester1"
@@ -41,15 +41,15 @@ services:
         condition: service_started
     networks:
       p2p:
-        ipv4_address: 10.8.0.2
+        ipv4_address: 172.20.0.3
   attester-2:
     <<: *othentic-cli
     command: [
       "node",
       "attester",
-      "/ip4/10.8.0.69/tcp/9876/p2p/${OTHENTIC_BOOTSTRAP_ID}",
+      "/ip4/172.20.0.2/tcp/9876/p2p/${OTHENTIC_BOOTSTRAP_ID}",
       "--avs-webapi",
-      "http://10.8.0.42",
+      "http://172.20.0.6",
       "--l1-chain", "holesky",
       "--l2-chain", "${L2:-base-sepolia}",
       "--p2p.datadir", "data/peerstore/attester2"
@@ -64,15 +64,15 @@ services:
         condition: service_started
     networks:
       p2p:
-        ipv4_address: 10.8.0.3
+        ipv4_address: 172.20.0.4
   attester-3:
     <<: *othentic-cli
     command: [
       "node",
       "attester",
-      "/ip4/10.8.0.69/tcp/9876/p2p/${OTHENTIC_BOOTSTRAP_ID}",
+      "/ip4/172.20.0.2/tcp/9876/p2p/${OTHENTIC_BOOTSTRAP_ID}",
       "--avs-webapi",
-      "http://10.8.0.42",
+      "http://172.20.0.6",
       "--l1-chain", "holesky",
       "--l2-chain", "${L2:-base-sepolia}",
       "--p2p.datadir", "data/peerstore/attester3"
@@ -87,7 +87,7 @@ services:
         condition: service_started
     networks:
       p2p:
-        ipv4_address: 10.8.0.4
+        ipv4_address: 172.20.0.5
   validation-service:
     build:
       context: ./Validation_Service
@@ -96,13 +96,13 @@ services:
       - .env
     networks:
       p2p:
-        ipv4_address: 10.8.0.42
+        ipv4_address: 172.20.0.6
   execution-service:
     build:
       context: ./Execution_Service
       dockerfile: ./Dockerfile
     environment:
-      - OTHENTIC_CLIENT_RPC_ADDRESS=http://10.8.0.69:8545
+      - OTHENTIC_CLIENT_RPC_ADDRESS=http://172.20.0.2:8545
       - PRIVATE_KEY=${PRIVATE_KEY_PERFORMER}
     env_file:
       - .env
@@ -110,7 +110,7 @@ services:
       - "4003:4003"
     networks:
       p2p:
-        ipv4_address: 10.8.0.101
+        ipv4_address: 172.20.0.7
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
@@ -123,7 +123,7 @@ services:
     restart: unless-stopped
     networks:
       p2p:
-        ipv4_address: 10.8.0.102
+        ipv4_address: 172.20.0.8
   
   grafana:
     image: grafana/grafana:latest
@@ -133,7 +133,7 @@ services:
       - '3000:3000'
     networks:
       p2p:
-        ipv4_address: 10.8.0.103
+        ipv4_address: 172.20.0.9
     environment:
     - GF_SECURITY_ADMIN_USER=admin
     - GF_SECURITY_ADMIN_PASSWORD=admin #Here you can set the password for the admin user
@@ -150,5 +150,5 @@ networks:
     driver: bridge
     ipam:
      config:
-       - subnet: 10.8.0.0/16
-         gateway: 10.8.0.1
+       - subnet: 172.20.0.0/16
+         gateway: 172.20.0.1
