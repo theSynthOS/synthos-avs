@@ -22,7 +22,7 @@ router.post("/validate", async (req, res) => {
       "Validation result:",
       result.isValid ? "Approved" : "Not Approved"
     );
-    return res.status(200).send(new CustomResponse(result));
+    return res.status(200).send(new CustomResponse(result.isValid));
   } catch (error) {
     console.log(error);
     return res.status(500).send(new CustomError("Something went wrong", {}));
