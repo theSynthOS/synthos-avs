@@ -3,3 +3,10 @@
 .Set_Syncer/node_modules
 data/*
 data/peerstore/*
+# Log files
+*.log
+logs/
+*.logs
+log/
+*.log.*
+npm-debug.log*

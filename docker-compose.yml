@@ -117,7 +117,7 @@ services:
     volumes:
       - ./prometheus.yaml:/etc/prometheus/prometheus.yaml  # Bind mount the config file
     ports:
-      - "9090:9090"  # Expose Prometheus on port 9090
+      - "9095:9095"  # Expose Prometheus on port 9090
     command:
       - '--config.file=/etc/prometheus/prometheus.yaml'  # Specify the config file location
     restart: unless-stopped
