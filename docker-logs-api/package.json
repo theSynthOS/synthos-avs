@@ -1,0 +1,23 @@
+{
+  "name": "docker-logs-api",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start:ws": "node websocket-server.js",
+    "start:http": "node http-server.js",
+    "start:both": "node websocket-server.js & node http-server.js",
+    "start": "nohup node websocket-server.js > ws.log 2>&1 & WS_PID=$! && echo \"WebSocket server started with PID: $WS_PID\" && nohup node http-server.js > http.log 2>&1 & HTTP_PID=$! && echo \"HTTP server started with PID: $HTTP_PID\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "Docker logs API server with WebSocket and HTTP/SSE implementations",
+  "dependencies": {
+    "dotenv": "^16.0.0",
+    "express": "^4.17.1",
+    "ws": "^8.2.3"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
