@@ -91,8 +91,8 @@ async function getTxDetails(txUUID) {
 
     const task = await taskRegistry.getTask(txUUID);
 
-    if (!task) {
-      throw new Error("Task not found");
+    if (task.timestamp === 0n) {
+      throw new Error("Task does not exist");
     }
 
     // Extract key details
