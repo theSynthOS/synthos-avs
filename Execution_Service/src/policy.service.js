@@ -145,10 +145,23 @@ async function validateTransaction(txUUID, agentId) {
       txDetails.executionTime // Execution time (When)
     );
 
+    // 6. Format the data according to CrosschainSender's expected format
+    const abiCoder = new ethers.AbiCoder();
+    const encodedData = abiCoder.encode(
+      ["bytes32", "uint256", "uint256", "string", "string"],
+      [
+        txUUID, // bytes32 txUUID
+        BigInt(agentId), // uint256 agentId
+        BigInt(Date.now()), // uint256 timestamp
+        isValid ? "APPROVED" : "REJECTED", // string status
+        reason, // string reason
+      ]
+    );
+
     return {
-      isValid,
-      reason,
-      timestamp: Date.now(),
+      data: encodedData,
+      proofOfTask: agentHash,
+      taskDefinitionId: 0,
       transactionDetails: {
         target: txDetails.to,
         functionSignature: txDetails.functionSignature,
