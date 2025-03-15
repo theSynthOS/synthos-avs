@@ -11,22 +11,19 @@ router.post("/execute", async (req, res) => {
   console.log("Validating execution request");
 
   try {
-    const { safeTxHash, agentId, taskDefinitionId = 0 } = req.body;
+    const { txUUID, agentId, taskDefinitionId = 0 } = req.body;
 
-    if (!safeTxHash || agentId == undefined) {
+    if (!txUUID || agentId == undefined) {
       return res
         .status(400)
         .send(
-          new CustomError(
-            "Missing required parameters: safeTxHash and agentId",
-            {}
-          )
+          new CustomError("Missing required parameters: txUUID and agentId", {})
         );
     }
 
     // Validate transaction against policy registry
     const validationResult = await policyService.validateTransaction(
-      safeTxHash,
+      txUUID,
       agentId
     );
 

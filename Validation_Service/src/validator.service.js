@@ -3,14 +3,7 @@ const { ethers } = require("ethers");
 const dalService = require("./dal.service");
 const policyService = require("./policy.service");
 
-// ABI for Policy Registry and Attestation contracts
-const POLICY_REGISTRY_ABI = [
-  "function validateTransaction(bytes32 safeTxHash, uint256 agentId) view returns (bool isValid, string memory reason)",
-  "function getAgentPolicies(uint256 agentId) view returns (uint256[] memory policyIds)",
-];
-
 let policyRegistry;
-let attestationCenter;
 let wallet;
 
 function init() {
@@ -24,12 +17,6 @@ function init() {
     POLICY_REGISTRY_ABI,
     wallet
   );
-
-  attestationCenter = new ethers.Contract(
-    process.env.ATTESTATION_CENTER_ADDRESS,
-    ATTESTATION_CENTER_ABI,
-    wallet
-  );
 }
 
 async function validate(proofOfTask) {
@@ -37,19 +24,19 @@ async function validate(proofOfTask) {
     // 1. Fetch the execution result from IPFS
     const executionResult = await dalService.fetchFromIpfs(proofOfTask);
 
-    // 2. Extract the safeTxHash and agentId from the execution result
-    const { safeTxHash, agentId } = executionResult;
+    // 2. Extract the txUUID and agentId from the execution result
+    const { txUUID, agentId } = executionResult;
 
-    if (!safeTxHash || agentId == undefined) {
+    if (!txUUID || agentId == undefined) {
       return {
         isValid: false,
-        reason: "Missing safeTxHash or agentId in execution result",
+        reason: "Missing txUUID or agentId in execution result",
       };
     }
 
     // 3. Run our own validation against the policy registry
     const validationResult = await policyService.validateTransaction(
-      safeTxHash,
+      txUUID,
       agentId
     );
 

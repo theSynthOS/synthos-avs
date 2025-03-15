@@ -19,7 +19,7 @@ The Policy-based Transaction Validation AVS is a decentralized framework that en
 
 ### Features
 
-- **Safe Transaction Validation:** Validates transactions against customizable policies
+- **Task-based Transaction Validation:** Validates transactions against customizable policies
 - **Policy Registry Integration:** Connects with on-chain policy registry
 - **IPFS Proof Storage:** Stores validation results on IPFS
 - **Containerised deployment:** Simplifies deployment and scaling
@@ -34,7 +34,7 @@ The Policy-based Transaction Validation AVS is a decentralized framework that en
 │ │ └── app.config.js # Express.js app setup with task controller route
 │ ├── 📂 src/
 │ │ └── dal.service.js # IPFS data storage and task sending service
-│ │ ├── policy.service.js # Safe transaction fetching and policy validation service
+│ │ ├── policy.service.js # Task fetching and policy validation service
 │ │ ├── task.controller.js # Express.js router handling `/execute` endpoint for transaction validation
 │ │ ├── 📂 utils # Custom response and error handling utilities
 │ ├── Dockerfile # Docker configuration for the Execution Service
@@ -67,29 +67,35 @@ The Policy-based Transaction Validation AVS is a decentralized framework that en
 
 2. **Execution Service**:
 
-   - Receives a Safe transaction hash (safeTxHash) and agent ID
-
-   - Uses Safe SDK to fetch transaction details
-
+   - Receives a task UUID (txUUID) and agent ID
+   - Fetches task details from Task Registry contract
    - Validates the transaction against policies in the Policy Registry
-
    - Publishes results to IPFS and returns the CID as proof
 
 3. **Validation Service**:
 
    - Receives the IPFS CID as proof of task
-
    - Retrieves the execution result from IPFS
-
-   - Independently validates the same transaction against the Policy Registry
-
+   - Independently validates the same task against the Policy Registry using Task Registry
    - Confirms that the execution result matches the validator's own check
 
-4. **Attestation Process**:
+4. **Task Registry Integration**:
 
-   - Attester nodes use the validation result to determine whether to attest to the transaction
+   - Central contract that stores task details including:
+     - Target address (to)
+     - Call data
+     - Execution timestamp
+     - Function signatures
+   - Used by both Execution and Validation services to fetch task information
 
-   - Valid transactions receive attestations, which can be used by the Safe Multisig
+5. **Policy Validation Flow**:
+   - Task details are fetched from Task Registry
+   - Agent hash is retrieved from Agent Registry
+   - Policy Coordinator validates the transaction based on:
+     - Agent hash (Who)
+     - Target address (Resources)
+     - Function signature (How)
+     - Execution time (When)
 
 ![Diagram](https://github.com/user-attachments/assets/8c60b9c4-e1b1-468b-a8cb-e0a59a604d21)
 
