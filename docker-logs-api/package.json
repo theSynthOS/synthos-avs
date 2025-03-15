@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "start:ws": "node websocket-server.js",
-    "start:http": "node http-server.js",
+    "start:http": "nohup node http-server.js > http.log 2>&1 & HTTP_PID=$! && echo \"HTTP server started with PID: $HTTP_PID\"",
     "start:both": "node websocket-server.js & node http-server.js",
     "start": "nohup node websocket-server.js > ws.log 2>&1 & WS_PID=$! && echo \"WebSocket server started with PID: $WS_PID\" && nohup node http-server.js > http.log 2>&1 & HTTP_PID=$! && echo \"HTTP server started with PID: $HTTP_PID\""
   },
