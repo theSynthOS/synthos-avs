@@ -89,7 +89,10 @@ async function getTxDetails(txUUID) {
       provider
     );
 
-    const task = await taskRegistry.getTask(txUUID);
+    //cast txUUID to bytes32
+    const txUUIDBytes = ethers.getBytes32FromHex(txUUID);
+
+    const task = await taskRegistry.getTask(txUUIDBytes);
 
     if (task.timestamp === 0n) {
       throw new Error("Task does not exist");
