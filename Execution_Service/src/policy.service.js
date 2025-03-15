@@ -2,6 +2,7 @@ require("dotenv").config();
 const { ethers, JsonRpcProvider } = require("ethers");
 const axios = require("axios");
 
+
 // ABI for Policy Coordinator contract interface
 const POLICY_COORDINATOR_ABI = [
   "function validateTransaction(string calldata dockerfileHash, address targetAddress, bytes4 functionSignature, uint256 executionTime) external view returns (bool isValid, string memory reason)",
@@ -89,10 +90,7 @@ async function getTxDetails(txUUID) {
       provider
     );
 
-    //cast txUUID to bytes32
-    const txUUIDBytes = ethers.getBytes32FromHex(txUUID);
-
-    const task = await taskRegistry.getTask(txUUIDBytes);
+    const task = await taskRegistry.getTask(txUUID);
 
     if (task.timestamp === 0n) {
       throw new Error("Task does not exist");
@@ -148,23 +146,10 @@ async function validateTransaction(txUUID, agentId) {
       txDetails.executionTime // Execution time (When)
     );
 
-    // 6. Format the data according to CrosschainSender's expected format
-    const abiCoder = new ethers.AbiCoder();
-    const encodedData = abiCoder.encode(
-      ["bytes32", "uint256", "uint256", "string", "string"],
-      [
-        txUUID, // bytes32 txUUID
-        BigInt(agentId), // uint256 agentId
-        BigInt(Date.now()), // uint256 timestamp
-        isValid ? "APPROVED" : "REJECTED", // string status
-        reason, // string reason
-      ]
-    );
-
     return {
-      data: encodedData,
-      proofOfTask: agentHash,
-      taskDefinitionId: 0,
+      isValid,
+      reason,
+      timestamp: Date.now(),
       transactionDetails: {
         target: txDetails.to,
         functionSignature: txDetails.functionSignature,

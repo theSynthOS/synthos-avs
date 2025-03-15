@@ -4,6 +4,7 @@ const CustomError = require("./utils/validateError");
 const CustomResponse = require("./utils/validateResponse");
 const policyService = require("./policy.service");
 const dalService = require("./dal.service");
+const { ethers } = require("ethers");
 
 const router = Router();
 
@@ -37,18 +38,24 @@ router.post("/execute", async (req, res) => {
     };
 
 
+    const taskData = ethers.AbiCoder.defaultAbiCoder().encode(
+        ["bytes32", "uint256", "uint256", "string", "string"],
+        [txUUID, agentId, Date.now(), executionResult.status, executionResult.reason]
+    );
+
+
     // Publish result to IPFS
     const resultCid = await dalService.publishJSONToIpfs(executionResult);
 
-    // Send the task with the IPFS CID
-    const data = JSON.stringify(executionResult);
-    await dalService.sendTask(resultCid, data, taskDefinitionId);
+
+
+    await dalService.sendTask(resultCid, taskData, taskDefinitionId);
 
     return res.status(200).send(
       new CustomResponse(
         {
           proofOfTask: resultCid,
-          data: data,
+          data: taskData,
           taskDefinitionId: taskDefinitionId,
         },
         "Execution validation completed"

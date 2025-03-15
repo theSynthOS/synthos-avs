@@ -89,7 +89,7 @@ async function getTxDetails(txUUID) {
       provider
     );
 
-    const task = await taskRegistry.getTask(txUUIDBytes);
+    const task = await taskRegistry.getTask(txUUID);
 
     if (task.timestamp === 0n) {
       throw new Error("Task does not exist");
@@ -145,23 +145,10 @@ async function validateTransaction(txUUID, agentId) {
       txDetails.executionTime // Execution time (When)
     );
 
-    // 6. Format the data according to CrosschainSender's expected format
-    const abiCoder = new ethers.AbiCoder();
-    const encodedData = abiCoder.encode(
-      ["bytes32", "uint256", "uint256", "string", "string"],
-      [
-        txUUID, // bytes32 txUUID
-        BigInt(agentId), // uint256 agentId
-        BigInt(Date.now()), // uint256 timestamp
-        isValid ? "APPROVED" : "REJECTED", // string status
-        reason, // string reason
-      ]
-    );
-
     return {
-      data: encodedData,
-      proofOfTask: agentHash,
-      taskDefinitionId: 0,
+      isValid,
+      reason,
+      timestamp: Date.now(),
       transactionDetails: {
         target: txDetails.to,
         functionSignature: txDetails.functionSignature,

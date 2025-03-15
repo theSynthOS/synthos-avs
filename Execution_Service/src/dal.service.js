@@ -18,13 +18,20 @@ async function sendTask(proofOfTask, data, taskDefinitionId) {
   var wallet = new ethers.Wallet(privateKey);
   var performerAddress = wallet.address;
 
-  // Convert string to bytes using ethers v5 methods
-  data = ethers.hexlify(ethers.toUtf8Bytes(data));
+
+  // If data is already in hex format, use it directly
+  // Otherwise, convert it to hex
+  if (!data.startsWith('0x')) {
+    data = ethers.hexlify(ethers.toUtf8Bytes(data));
+  }
+
 
   const message = ethers.AbiCoder.defaultAbiCoder().encode(
     ["string", "bytes", "address", "uint16"],
     [proofOfTask, data, performerAddress, taskDefinitionId]
   );
+
+  
   const messageHash = ethers.keccak256(message);
   const sig = wallet.signingKey.sign(messageHash).serialized;
 
