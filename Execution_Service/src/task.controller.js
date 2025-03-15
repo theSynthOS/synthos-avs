@@ -32,7 +32,7 @@ router.post("/execute", async (req, res) => {
 
     // Create execution result
     const executionResult = {
-      safeTxHash,
+      txUUID,
       agentId,
       timestamp: Date.now(),
       status: validationResult.isValid ? "APPROVED" : "DENIED",

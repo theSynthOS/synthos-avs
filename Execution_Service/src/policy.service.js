@@ -12,51 +12,46 @@ const AGENT_REGISTRY_ABI = [
   "function getAgentHashById(uint256 agentId) view returns (string memory)",
 ];
 
+const TASK_REGISTRY_ABI = [
+  "function getTask(bytes32 uuid) external view returns (Task memory)",
+];
+
 let policyCoordinatorChainRpcUrl = "";
 let policyCoordinatorAddress = "";
 let agentRegistryAddress = "";
-let safeServiceUrl = "";
+let taskRegistryAddress = "";
 
 function init() {
   policyCoordinatorChainRpcUrl = process.env.POLICY_COORDINATOR_CHAIN_RPC_URL;
   policyCoordinatorAddress = process.env.POLICY_COORDINATOR_ADDRESS;
   agentRegistryAddress = process.env.AGENT_REGISTRY_ADDRESS;
-  safeServiceUrl =
-    process.env.SAFE_SERVICE_URL ||
-    "https://safe-transaction-goerli.safe.global";
+  taskRegistryAddress = process.env.TASK_REGISTRY_ADDRESS;
 }
 
-async function getSafeTransactionDetails(safeTxHash) {
+async function getTxDetails(txUUID) {
   try {
-    // Make direct API call to the Safe Transaction Service using the correct endpoint
-    const response = await axios.get(
-      `${safeServiceUrl}/api/v2/multisig-transactions/${safeTxHash}/`
-    );
-    const safeTransaction = response.data;
+    const provider = new JsonRpcProvider(policyCoordinatorChainRpcUrl);
 
-    console.log("Transaction data received:", safeTransaction);
+    const taskRegistry = new ethers.Contract(
+      taskRegistryAddress,
+      TASK_REGISTRY_ABI,
+      provider
+    );
+
+    const task = await taskRegistry.getTask(txUUID);
 
     // Extract key details
     return {
-      to: safeTransaction.to,
-      data: safeTransaction.data || "0x",
-      value: safeTransaction.value,
-      operation: safeTransaction.operation,
-      safeTxGas: safeTransaction.safeTxGas,
-      baseGas: safeTransaction.baseGas,
-      gasPrice: safeTransaction.gasPrice,
-      gasToken: safeTransaction.gasToken,
-      refundReceiver: safeTransaction.refundReceiver,
-      nonce: safeTransaction.nonce,
-      executionTime: Date.now(), // Current time as execution time
-      // Extract function signature (first 4 bytes of data)
+      to: task.to,
+      data: task.callData,
+      executionTime: task.timestamp,
       functionSignature:
-        safeTransaction.data && safeTransaction.data.length >= 10
-          ? safeTransaction.data.substring(0, 10)
+        task.callData && task.callData.length >= 10
+          ? task.callData.substring(0, 10)
           : "0x00000000",
     };
   } catch (error) {
-    console.error("Error fetching Safe transaction details:", error);
+    console.error("Error fetching Task details:", error);
     if (error.response) {
       console.error("API response error:", error.response.data);
     }
@@ -64,10 +59,10 @@ async function getSafeTransactionDetails(safeTxHash) {
   }
 }
 
-async function validateTransaction(safeTxHash, agentId) {
+async function validateTransaction(txUUID, agentId) {
   try {
-    // 1. Get transaction details from Safe
-    const txDetails = await getSafeTransactionDetails(safeTxHash);
+    // 1. Get transaction details from Task Registry
+    const txDetails = await getTxDetails(txUUID);
 
     // 2. Connect to policy coordinator
     const provider = new JsonRpcProvider(policyCoordinatorChainRpcUrl);
@@ -114,5 +109,5 @@ async function validateTransaction(safeTxHash, agentId) {
 module.exports = {
   init,
   validateTransaction,
-  getSafeTransactionDetails, // Export this for testing or other use cases
+  getTxDetails, // Export this for testing or other use cases
 };
