@@ -39,7 +39,7 @@ router.post("/execute", async (req, res) => {
 
 
     const taskData = ethers.AbiCoder.defaultAbiCoder().encode(
-        ["bytes32", "uint256", "uint256", "string", "string"],
+        ["string", "uint256", "uint256", "string", "string"],
         [txUUID, agentId, Date.now(), executionResult.status, executionResult.reason]
     );
 
