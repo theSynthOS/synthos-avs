@@ -10,3 +10,4 @@ logs/
 log/
 *.log.*
 npm-debug.log*
+data/peerstore/aggregator/CURRENT
